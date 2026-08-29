@@ -2,7 +2,7 @@
 
 [← All topics](../README.md)
 
-First topic: choose a database, write comments, retrieve rows with `SELECT` / `FROM`, filter with `WHERE`, and sort with `ORDER BY`.
+First topic: choose a database, write comments, retrieve rows with `SELECT` / `FROM`, filter with `WHERE`, sort with `ORDER BY`, and summarise with `GROUP BY`.
 
 ---
 
@@ -54,7 +54,7 @@ When you add `WHERE`, `ORDER BY`, etc., the **written** order and **execution** 
 
 **One-line mnemonic:** **F**rom **W**here **G**roup **H**aving **S**elect **O**rder → **FWGHSO**
 
-For this folder you need **FROM → WHERE → SELECT → ORDER BY**. The rest will matter in later lessons.
+For this folder you need **FROM → WHERE → GROUP BY → SELECT → ORDER BY**. `HAVING` is next.
 
 ---
 
@@ -224,6 +224,107 @@ First group by country (A → Z). Then, **inside each country**, highest score f
 
 ---
 
+## Visual cheat sheet — `GROUP BY` (collapse rows)
+
+`GROUP BY` **combines rows that share the same value** into one row, then **aggregates** a column for that group.
+
+| Term | Short definition |
+| --- | --- |
+| `GROUP BY col` | One output row per distinct value of `col` |
+| Aggregate | A calc over the group: `SUM`, `COUNT`, `AVG`, `MIN`, `MAX` |
+| `SUM(score)` | Add the scores inside the group |
+| `COUNT(id)` | Count customers (non-null `id`s) in the group |
+| `AS alias` | Rename the result column (`total_score`) |
+| Extra `GROUP BY` columns | Finer groups — each unique **pair** (country + name) |
+
+**Golden rule:** every `SELECT` column is either in `GROUP BY` **or** inside an aggregate. `SELECT first_name` with `GROUP BY country` alone will fail.
+
+### What you type (reading order)
+
+```sql
+SELECT
+    country,            -- ① you write this first (category)
+    SUM(score)          --    and the aggregate
+FROM customers          -- ② you write this second
+GROUP BY country;       -- ③ you write this third
+```
+
+### What actually runs (execution order)
+
+```
+┌──────────────────────────────────────────────────────────────────┐
+│  STEP 1   FROM customers                                         │
+│           ↓  load rows                                           │
+│                                                                  │
+│  STEP 2   GROUP BY country                                       │
+│           ↓  bucket rows that share a country  ← GROUP HERE      │
+│                                                                  │
+│  STEP 3   SELECT country, SUM(score)                             │
+│           ↓  one row per bucket + the total                      │
+└──────────────────────────────────────────────────────────────────┘
+```
+
+`ORDER BY` still runs **after** `SELECT` if you add it. `WHERE` still runs **before** `GROUP BY` (filter rows, then group).
+
+**Memory hook:** **F**rom → **G**roup → **S**elect → **FGS**. With a filter: **FWGSO**.
+
+```mermaid
+flowchart TD
+    A["① FROM customers<br/><i>Load the table</i>"] --> B["② GROUP BY country<br/><i>One bucket per country</i>"]
+    B --> C["③ SELECT country, SUM(score)<br/><i>One row + total per bucket</i>"]
+    C --> D["Summarised rows returned to you"]
+
+    style B fill:#e2d5f1,stroke:#6f42c1
+```
+
+### Collapse picture — `GROUP BY country` + `SUM(score)`
+
+```
+  customers (detail)              GROUP BY country
+  ┌─────────┬───────┐             ┌─────────┬────────────┐
+  │ Germany │    85 │             │ Germany │  85+42=127 │  ← 1 row
+  │ Germany │    42 │   ──────►   │ USA     │ 100+10=110 │  ← 1 row
+  │ USA     │   100 │             └─────────┴────────────┘
+  │ USA     │    10 │             many rows → few rows
+  └─────────┴───────┘
+```
+
+### Two aggregates — `SUM` and `COUNT`
+
+```
+  Germany bucket                  SELECT result
+  ┌─────────┬───────┐             ┌─────────┬─────────────┬─────────────────┐
+  │ Germany │    85 │   ──────►   │ Germany │ total_score │ total_customers │
+  │ Germany │    42 │             │         │     127     │        2        │
+  └─────────┴───────┘             └─────────┴─────────────┴─────────────────┘
+```
+
+### Extra grouping column — `GROUP BY country, first_name`
+
+Finer buckets. `Germany + Anna` and `Germany + Ben` stay **two** rows, not one.
+
+```
+  GROUP BY country                GROUP BY country, first_name
+  ┌─────────┬─────┐               ┌─────────┬────────┬─────┐
+  │ Germany │ 127 │   ──────►     │ Germany │ Anna   │  85 │
+  │ USA     │ 110 │               │ Germany │ Ben    │  42 │
+  └─────────┴─────┘               │ USA     │ Cara   │ 100 │
+                                  └─────────┴────────┴─────┘
+  coarse (one per country)        fine (one per country + name)
+```
+
+### Examples from `group-by.sql`
+
+| Goal | What to write |
+| --- | --- |
+| Total score per country | `SELECT country, SUM(score) ... GROUP BY country` |
+| Total score per country **and** name | `GROUP BY country, first_name` (both columns in `SELECT` too) |
+| Score total + customer count | `SUM(score) AS total_score, COUNT(id) AS total_customers` |
+
+**Rule:** `GROUP BY` answers “per what?” — per country, or per country and name. Aggregates answer “what number for that group?”
+
+---
+
 ## Files in this folder
 
 | File | What it covers |
@@ -232,6 +333,7 @@ First group by country (A → Z). Then, **inside each country**, highest score f
 | [select&from.sql](select%26from.sql) | `SELECT *` and selected columns from `customers` and `orders` |
 | [where-clause.sql](where-clause.sql) | Filter rows with `WHERE` (`!=`, `=`, text vs numbers) |
 | [order-by.sql](order-by.sql) | Sort rows with `ORDER BY` (`ASC`, `DESC`, nested keys) |
+| [group-by.sql](group-by.sql) | Collapse rows with `GROUP BY` (`SUM`, `COUNT`, extra keys) |
 
 ---
 
@@ -240,6 +342,7 @@ First group by country (A → Z). Then, **inside each country**, highest score f
 - **`USE MyDatabase;`** — tells SQL Server which database to use (run before your query).
 - **`SELECT *`** — all columns; **`SELECT col1, col2`** — only the columns you list.
 - **`FROM table_name`** — where the rows come from; the engine processes this **first**.
-- **`WHERE condition`** — filter rows **second** (after `FROM`, before `SELECT`).
+- **`WHERE condition`** — filter rows **after** `FROM`, **before** grouping.
+- **`GROUP BY col`** — one row per value of `col`; pair it with `SUM` / `COUNT` (and `AS` aliases). Extra keys make finer groups.
 - **`ORDER BY col ASC|DESC`** — sort the result **last**. Nested columns are tie-breakers.
 - Comments: `-- one line` or `/* many lines */` — ignored by the engine, for you only.
