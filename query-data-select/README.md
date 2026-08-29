@@ -2,7 +2,7 @@
 
 [← All topics](../README.md)
 
-First topic: choose a database, write comments, retrieve rows with `SELECT` / `FROM`, filter with `WHERE`, sort with `ORDER BY`, and summarise with `GROUP BY`.
+First topic: choose a database, write comments, retrieve rows with `SELECT` / `FROM`, filter with `WHERE`, sort with `ORDER BY`, summarise with `GROUP BY`, and filter groups with `HAVING`.
 
 ---
 
@@ -54,7 +54,7 @@ When you add `WHERE`, `ORDER BY`, etc., the **written** order and **execution** 
 
 **One-line mnemonic:** **F**rom **W**here **G**roup **H**aving **S**elect **O**rder → **FWGHSO**
 
-For this folder you need **FROM → WHERE → GROUP BY → SELECT → ORDER BY**. `HAVING` is next.
+For this folder you need the full path: **FROM → WHERE → GROUP BY → HAVING → SELECT → ORDER BY**.
 
 ---
 
@@ -325,6 +325,101 @@ Finer buckets. `Germany + Anna` and `Germany + Ben` stay **two** rows, not one.
 
 ---
 
+## Visual cheat sheet — `WHERE` vs `HAVING` (two filters)
+
+Two gates, two moments:
+
+| Term | Short definition |
+| --- | --- |
+| `WHERE` | Filter **rows** **before** grouping |
+| `HAVING` | Filter **groups** **after** aggregation |
+| `AVG(score)` | Average of `score` inside the group |
+| `HAVING AVG(score) > 430` | Keep only groups whose average is above 430 |
+
+`HAVING` needs `GROUP BY`. `WHERE` cannot use `SUM` / `AVG` / `COUNT` — those numbers do not exist yet.
+
+### What you type (reading order)
+
+```sql
+SELECT
+    country,
+    AVG(score) AS avg_score   -- ① you write this first
+FROM customers                -- ②
+WHERE score != 0              -- ③  row filter
+GROUP BY country              -- ④
+HAVING AVG(score) > 430;      -- ⑤  group filter
+```
+
+### What actually runs (execution order)
+
+```
+┌──────────────────────────────────────────────────────────────────┐
+│  STEP 1   FROM customers                                         │
+│           ↓  load rows                                           │
+│                                                                  │
+│  STEP 2   WHERE score != 0                                       │
+│           ↓  drop individual rows  ← ROW FILTER                  │
+│                                                                  │
+│  STEP 3   GROUP BY country                                       │
+│           ↓  bucket remaining rows                               │
+│                                                                  │
+│  STEP 4   HAVING AVG(score) > 430                                │
+│           ↓  drop whole countries  ← GROUP FILTER                │
+│                                                                  │
+│  STEP 5   SELECT country, AVG(score)                             │
+│           ↓  show the groups that survived                       │
+└──────────────────────────────────────────────────────────────────┘
+```
+
+**Memory hook:** **W**here = **w**hen still rows. **H**aving = **h**as been grouped. **FWGHSO**.
+
+```mermaid
+flowchart TD
+    A["① FROM customers<br/><i>All rows</i>"] --> B["② WHERE score != 0<br/><i>Drop score-0 customers</i>"]
+    B --> C["③ GROUP BY country<br/><i>One bucket per country</i>"]
+    C --> D["④ HAVING AVG(score) > 430<br/><i>Drop countries with a low average</i>"]
+    D --> E["⑤ SELECT country, avg_score<br/><i>Show surviving groups</i>"]
+
+    style B fill:#fff3cd,stroke:#856404
+    style D fill:#f8d7da,stroke:#721c24
+```
+
+### Two-gate picture (from `having-where-filter.sql`)
+
+```
+  customers              WHERE score != 0         GROUP BY + AVG          HAVING AVG > 430
+  ┌─────────┬─────┐      ┌─────────┬─────┐        ┌─────────┬─────┐       ┌─────────┬─────┐
+  │ Germany │   0 │ ✗    │ Germany │ 500 │        │ Germany │ 500 │ ✓     │ Germany │ 500 │
+  │ Germany │ 500 │ ✓    │ USA     │ 200 │        │ USA     │ 250 │ ✗     └─────────┴─────┘
+  │ USA     │ 200 │ ✓    │ USA     │ 300 │        └─────────┴─────┘        USA dropped as a group
+  │ USA     │ 300 │ ✓    └─────────┴─────┘        Germany 500, USA (200+300)/2
+  └─────────┴─────┘      0-score row gone
+       row gate                 then group                    then group gate
+```
+
+`WHERE` never sees `AVG`. `HAVING` never sees the dropped `score = 0` row — it was already gone.
+
+### `WHERE` vs `HAVING` (pick one)
+
+| Question | Use |
+| --- | --- |
+| Drop **customers** (score is 0) | `WHERE score != 0` |
+| Drop **countries** (average is too low) | `HAVING AVG(score) > 430` |
+
+Wrong: `WHERE AVG(score) > 430` — aggregation has not run yet.
+
+### Example from `having-where-filter.sql`
+
+| Goal | Clause |
+| --- | --- |
+| Ignore zero scores | `WHERE score != 0` |
+| Average per country | `GROUP BY country` + `AVG(score)` |
+| Keep high-average countries only | `HAVING AVG(score) > 430` |
+
+**Rule:** filter **rows** with `WHERE`, filter **groups** with `HAVING`.
+
+---
+
 ## Files in this folder
 
 | File | What it covers |
@@ -334,6 +429,7 @@ Finer buckets. `Germany + Anna` and `Germany + Ben` stay **two** rows, not one.
 | [where-clause.sql](where-clause.sql) | Filter rows with `WHERE` (`!=`, `=`, text vs numbers) |
 | [order-by.sql](order-by.sql) | Sort rows with `ORDER BY` (`ASC`, `DESC`, nested keys) |
 | [group-by.sql](group-by.sql) | Collapse rows with `GROUP BY` (`SUM`, `COUNT`, extra keys) |
+| [having-where-filter.sql](having-where-filter.sql) | Filter rows with `WHERE`, then groups with `HAVING` |
 
 ---
 
@@ -343,6 +439,7 @@ Finer buckets. `Germany + Anna` and `Germany + Ben` stay **two** rows, not one.
 - **`SELECT *`** — all columns; **`SELECT col1, col2`** — only the columns you list.
 - **`FROM table_name`** — where the rows come from; the engine processes this **first**.
 - **`WHERE condition`** — filter rows **after** `FROM`, **before** grouping.
-- **`GROUP BY col`** — one row per value of `col`; pair it with `SUM` / `COUNT` (and `AS` aliases). Extra keys make finer groups.
+- **`GROUP BY col`** — one row per value of `col`; pair it with `SUM` / `COUNT` / `AVG` (and `AS` aliases). Extra keys make finer groups.
+- **`HAVING condition`** — filter **groups** after aggregation (`HAVING AVG(score) > 430`). Not a row filter.
 - **`ORDER BY col ASC|DESC`** — sort the result **last**. Nested columns are tie-breakers.
 - Comments: `-- one line` or `/* many lines */` — ignored by the engine, for you only.
