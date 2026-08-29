@@ -1,0 +1,4 @@
+* text=auto
+*.sql text eol=crlf
+*.md text eol=lf
+*.gitignore text eol=lf

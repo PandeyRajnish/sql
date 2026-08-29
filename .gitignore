@@ -1,0 +1,36 @@
+# SQL Server data and backups — never commit these
+*.mdf
+*.ldf
+*.ndf
+*.bak
+*.trn
+*.dacpac
+*.bacpac
+*.jfm
+*.dbmdl
+
+# SSMS / Visual Studio local files
+.vs/
+*.rsuser
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.sqlproj.user
+
+# Secrets and connection details
+.env
+.env.*
+*.env
+*credentials*
+*connection-string*
+secrets/
+
+# OS
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# Editor / tooling
+*.code-workspace
+*.log
