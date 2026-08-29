@@ -2,7 +2,7 @@
 
 [← All topics](../README.md)
 
-First topic: choose a database, write comments, retrieve rows with `SELECT` / `FROM`, and filter rows with `WHERE`.
+First topic: choose a database, write comments, retrieve rows with `SELECT` / `FROM`, filter with `WHERE`, and sort with `ORDER BY`.
 
 ---
 
@@ -54,7 +54,7 @@ When you add `WHERE`, `ORDER BY`, etc., the **written** order and **execution** 
 
 **One-line mnemonic:** **F**rom **W**here **G**roup **H**aving **S**elect **O**rder → **FWGHSO**
 
-For this folder you need **FROM → WHERE → SELECT**. The rest will matter in later lessons.
+For this folder you need **FROM → WHERE → SELECT → ORDER BY**. The rest will matter in later lessons.
 
 ---
 
@@ -129,6 +129,101 @@ flowchart TD
 
 ---
 
+## Visual cheat sheet — `ORDER BY` (sort rows)
+
+`ORDER BY` **sorts the finished result**. It does not filter. It does not pick columns. It runs **last**.
+
+| Term | Short definition |
+| --- | --- |
+| `ORDER BY` | Sort the result set after it is built |
+| `ASC` | Ascending — lowest → highest / A → Z (**default**) |
+| `DESC` | Descending — highest → lowest / Z → A |
+| Nested `ORDER BY` | Sort by the first column, then use the next as a **tie-breaker** |
+
+Always write `ASC` or `DESC` even though `ASC` is the default — it is easier to read.
+
+### What you type (reading order)
+
+```sql
+SELECT *                     -- ① you write this first
+FROM customers               -- ② you write this second
+ORDER BY score DESC;         -- ③ you write this last
+```
+
+### What actually runs (execution order)
+
+```
+┌──────────────────────────────────────────────────────────────────┐
+│  STEP 1   FROM customers                                         │
+│           ↓  load rows                                           │
+│                                                                  │
+│  STEP 2   SELECT *                                               │
+│           ↓  pick columns (build the result)                     │
+│                                                                  │
+│  STEP 3   ORDER BY score DESC                                    │
+│           ↓  sort that result  ← SORT HERE (last)                │
+└──────────────────────────────────────────────────────────────────┘
+```
+
+**Not** `FROM` → `ORDER BY` → `SELECT`. You sort the **result**, not the table. Proof: a `SELECT` alias works in `ORDER BY` (SELECT already ran), but that same alias fails in `WHERE` (WHERE runs before SELECT).
+
+```sql
+SELECT first_name AS name
+FROM customers
+ORDER BY name;   -- works  → SELECT happened, then ORDER BY
+```
+
+**Memory hook:** **F**rom → **S**elect → **O**rder → **FSO**. With a filter: **F**rom → **W**here → **S**elect → **O**rder → **FWSO**.
+
+```mermaid
+flowchart TD
+    A["① FROM customers<br/><i>Load the table</i>"] --> B["② SELECT columns<br/><i>Build the result</i>"]
+    B --> C["③ ORDER BY<br/><i>Sort the result</i>"]
+    C --> D["Sorted rows returned to you"]
+
+    style C fill:#d1ecf1,stroke:#0c5460
+```
+
+### Sort picture — `ORDER BY score DESC`
+
+```
+  unsorted result              ORDER BY score DESC
+  ┌────────┬───────┐           ┌────────┬───────┐
+  │ Anna   │    42 │           │ Ben    │   100 │  ← highest first
+  │ Ben    │   100 │  ──────►  │ Cara   │    85 │
+  │ Cara   │    85 │           │ Anna   │    42 │  ← lowest last
+  └────────┴───────┘           └────────┴───────┘
+```
+
+`ASC` is the same picture flipped: `42` then `85` then `100`.
+
+### Nested sort — `country ASC, score DESC`
+
+First group by country (A → Z). Then, **inside each country**, highest score first.
+
+```
+  unsorted                 ① country ASC              ② then score DESC
+  ┌─────────┬─────┐        ┌─────────┬─────┐          ┌─────────┬─────┐
+  │ USA     │  10 │        │ Germany │  42 │          │ Germany │  85 │
+  │ Germany │  42 │  ───►  │ Germany │  85 │   ───►   │ Germany │  42 │
+  │ USA     │ 100 │        │ USA     │  10 │          │ USA     │ 100 │
+  │ Germany │  85 │        │ USA     │ 100 │          │ USA     │  10 │
+  └─────────┴─────┘        └─────────┴─────┘          └─────────┴─────┘
+                           countries grouped          tie-breaker inside group
+```
+
+### Examples from `order-by.sql`
+
+| Goal | Clause |
+| --- | --- |
+| Highest score first | `ORDER BY score DESC` |
+| Lowest score first | `ORDER BY score ASC` |
+| Country A→Z, then highest score | `ORDER BY country ASC, score DESC` |
+
+**Rule:** Left column is the main sort. Each extra column only breaks ties.
+
+---
+
 ## Files in this folder
 
 | File | What it covers |
@@ -136,6 +231,7 @@ flowchart TD
 | [usedb&comments.sql](usedb%26comments.sql) | `USE` and single-line / multi-line comments |
 | [select&from.sql](select%26from.sql) | `SELECT *` and selected columns from `customers` and `orders` |
 | [where-clause.sql](where-clause.sql) | Filter rows with `WHERE` (`!=`, `=`, text vs numbers) |
+| [order-by.sql](order-by.sql) | Sort rows with `ORDER BY` (`ASC`, `DESC`, nested keys) |
 
 ---
 
@@ -145,4 +241,5 @@ flowchart TD
 - **`SELECT *`** — all columns; **`SELECT col1, col2`** — only the columns you list.
 - **`FROM table_name`** — where the rows come from; the engine processes this **first**.
 - **`WHERE condition`** — filter rows **second** (after `FROM`, before `SELECT`).
+- **`ORDER BY col ASC|DESC`** — sort the result **last**. Nested columns are tie-breakers.
 - Comments: `-- one line` or `/* many lines */` — ignored by the engine, for you only.

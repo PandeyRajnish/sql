@@ -10,11 +10,13 @@ Practice scripts for SQL Server, organized by topic. Open a topic below to read 
 
 ### 1. [Query data with SELECT](query-data-select/README.md)
 
-`USE`, comments, `SELECT`, `FROM`
+`USE`, comments, `SELECT`, `FROM`, `WHERE`, `ORDER BY`
 
 - [Topic notes](query-data-select/README.md)
 - [usedb&comments.sql](query-data-select/usedb%26comments.sql)
 - [select&from.sql](query-data-select/select%26from.sql)
+- [where-clause.sql](query-data-select/where-clause.sql)
+- [order-by.sql](query-data-select/order-by.sql)
 
 ## Add a new topic
 
