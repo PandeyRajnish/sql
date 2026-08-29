@@ -1,5 +1,7 @@
 # Query data with SELECT
 
+[← All topics](../README.md)
+
 First topic: choose a database, write comments, and retrieve rows with `SELECT` / `FROM`.
 
 ---
@@ -58,10 +60,10 @@ For this folder you only need **FROM → SELECT**. The rest will matter in later
 
 ## Files in this folder
 
-| File                 | What it covers                                                |
-| -------------------- | ------------------------------------------------------------- |
-| `usedb&comments.sql` | `USE` and single-line / multi-line comments                   |
-| `select&from.sql`    | `SELECT *` and selected columns from `customers` and `orders` |
+| File | What it covers |
+| --- | --- |
+| [usedb&comments.sql](usedb%26comments.sql) | `USE` and single-line / multi-line comments |
+| [select&from.sql](select%26from.sql) | `SELECT *` and selected columns from `customers` and `orders` |
 
 ---
 
