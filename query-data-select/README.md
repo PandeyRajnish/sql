@@ -2,7 +2,7 @@
 
 [← All topics](../README.md)
 
-First topic: choose a database, write comments, retrieve rows with `SELECT` / `FROM`, filter with `WHERE`, sort with `ORDER BY`, summarise with `GROUP BY`, and filter groups with `HAVING`.
+First topic: choose a database, write comments, retrieve rows with `SELECT` / `FROM`, filter with `WHERE`, sort with `ORDER BY`, summarise with `GROUP BY`, filter groups with `HAVING`, and drop duplicates with `DISTINCT`.
 
 ---
 
@@ -54,7 +54,7 @@ When you add `WHERE`, `ORDER BY`, etc., the **written** order and **execution** 
 
 **One-line mnemonic:** **F**rom **W**here **G**roup **H**aving **S**elect **O**rder → **FWGHSO**
 
-For this folder you need the full path: **FROM → WHERE → GROUP BY → HAVING → SELECT → ORDER BY**.
+For this folder you need the full path: **FROM → WHERE → GROUP BY → HAVING → SELECT (DISTINCT) → ORDER BY**.
 
 ---
 
@@ -420,6 +420,101 @@ Wrong: `WHERE AVG(score) > 430` — aggregation has not run yet.
 
 ---
 
+## Visual cheat sheet — `DISTINCT` (drop duplicates)
+
+`DISTINCT` keeps **each selected value once**. Repeated rows disappear.
+
+| Term | Short definition |
+| --- | --- |
+| `SELECT DISTINCT col` | Unique list of `col` — each value appears **once** |
+| Duplicate | The same selected row appearing more than once |
+| Cost | Extra work (sort/hash) — skip it if the data is already unique |
+
+**Habit:** do not add `DISTINCT` “just in case.” Use it when you truly want a unique list.
+
+### What you type (reading order)
+
+```sql
+SELECT DISTINCT country   -- ① unique list
+FROM customers;           -- ②
+```
+
+### What actually runs (execution order)
+
+```
+┌──────────────────────────────────────────────────────────────────┐
+│  STEP 1   FROM customers                                         │
+│           ↓  load rows                                           │
+│                                                                  │
+│  STEP 2   SELECT country                                         │
+│           ↓  pick the column (Germany, Germany, USA, USA …)      │
+│                                                                  │
+│  STEP 3   DISTINCT                                               │
+│           ↓  drop repeats  ← DEDUPE HERE (part of SELECT)        │
+└──────────────────────────────────────────────────────────────────┘
+```
+
+`DISTINCT` lives **inside** `SELECT`, after grouping/having, **before** `ORDER BY`.
+
+**Memory hook:** `DISTINCT` = “each value **once**.” Not a filter like `WHERE`. Not a total like `GROUP BY`.
+
+```mermaid
+flowchart TD
+    A["① FROM customers<br/><i>All customer rows</i>"] --> B["② SELECT country<br/><i>Country on every row</i>"]
+    B --> C["③ DISTINCT<br/><i>Keep each country once</i>"]
+    C --> D["Unique country list"]
+
+    style C fill:#d4edda,stroke:#155724
+```
+
+### Dedupe picture — `SELECT DISTINCT country`
+
+```
+  SELECT country                 SELECT DISTINCT country
+  ┌─────────┐                    ┌─────────┐
+  │ Germany │                    │ Germany │  ← once
+  │ Germany │                    │ USA     │  ← once
+  │ USA     │         ──────►    └─────────┘
+  │ USA     │                    4 rows → 2 rows
+  │ USA     │
+  └─────────┘
+  repeats kept                   repeats gone
+```
+
+### Whole-row rule
+
+`DISTINCT` looks at **every column you selected**, as one row.
+
+```
+  SELECT DISTINCT country, first_name
+  ┌─────────┬────────┐
+  │ Germany │ Anna   │  ← kept
+  │ Germany │ Ben    │  ← kept (same country, different name)
+  │ Germany │ Anna   │  ← dropped (exact pair already seen)
+  └─────────┴────────┘
+```
+
+Same country twice is fine if the names differ. Only **identical pairs** collapse.
+
+### `DISTINCT` vs `GROUP BY`
+
+| Goal | Use |
+| --- | --- |
+| Unique list, no totals | `SELECT DISTINCT country` |
+| Totals / counts / averages | `GROUP BY country` + `SUM` / `COUNT` / `AVG` |
+
+Do not use `DISTINCT` to hide a bad join. If rows should already be unique, fix the query instead.
+
+### Example from `distinct.sql`
+
+| Goal | What to write |
+| --- | --- |
+| Unique list of countries | `SELECT DISTINCT country FROM customers` |
+
+**Rule:** need a unique list → `DISTINCT`. Already unique → leave it off.
+
+---
+
 ## Files in this folder
 
 | File | What it covers |
@@ -430,6 +525,7 @@ Wrong: `WHERE AVG(score) > 430` — aggregation has not run yet.
 | [order-by.sql](order-by.sql) | Sort rows with `ORDER BY` (`ASC`, `DESC`, nested keys) |
 | [group-by.sql](group-by.sql) | Collapse rows with `GROUP BY` (`SUM`, `COUNT`, extra keys) |
 | [having-where-filter.sql](having-where-filter.sql) | Filter rows with `WHERE`, then groups with `HAVING` |
+| [distinct.sql](distinct.sql) | Unique values with `SELECT DISTINCT` |
 
 ---
 
@@ -441,5 +537,6 @@ Wrong: `WHERE AVG(score) > 430` — aggregation has not run yet.
 - **`WHERE condition`** — filter rows **after** `FROM`, **before** grouping.
 - **`GROUP BY col`** — one row per value of `col`; pair it with `SUM` / `COUNT` / `AVG` (and `AS` aliases). Extra keys make finer groups.
 - **`HAVING condition`** — filter **groups** after aggregation (`HAVING AVG(score) > 430`). Not a row filter.
+- **`SELECT DISTINCT col`** — unique list; each selected row once. Skip it if data is already unique.
 - **`ORDER BY col ASC|DESC`** — sort the result **last**. Nested columns are tie-breakers.
 - Comments: `-- one line` or `/* many lines */` — ignored by the engine, for you only.
