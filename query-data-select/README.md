@@ -2,7 +2,7 @@
 
 [← All topics](../README.md)
 
-First topic: choose a database, write comments, retrieve rows with `SELECT` / `FROM`, filter with `WHERE`, sort with `ORDER BY`, summarise with `GROUP BY`, filter groups with `HAVING`, and drop duplicates with `DISTINCT`.
+First topic: choose a database, write comments, retrieve rows with `SELECT` / `FROM`, filter with `WHERE`, sort with `ORDER BY`, summarise with `GROUP BY`, filter groups with `HAVING`, drop duplicates with `DISTINCT`, and limit rows with `TOP`.
 
 ---
 
@@ -45,16 +45,17 @@ When you add `WHERE`, `ORDER BY`, etc., the **written** order and **execution** 
 
 | You write (top → bottom) | Engine runs (actual order)   |
 | ------------------------ | ---------------------------- |
-| `SELECT`                 | 5. `SELECT`                  |
+| `SELECT` / `TOP`         | 5. `SELECT`                  |
 | `FROM`                   | 1. **`FROM`** ← always first |
 | `WHERE`                  | 2. `WHERE`                   |
 | `GROUP BY`               | 3. `GROUP BY`                |
 | `HAVING`                 | 4. `HAVING`                  |
 | `ORDER BY`               | 6. `ORDER BY`                |
+|                          | 7. **`TOP`** ← after sort    |
 
-**One-line mnemonic:** **F**rom **W**here **G**roup **H**aving **S**elect **O**rder → **FWGHSO**
+**One-line mnemonic:** **F**rom **W**here **G**roup **H**aving **S**elect **O**rder **T**op → **FWGHSOT**
 
-For this folder you need the full path: **FROM → WHERE → GROUP BY → HAVING → SELECT (DISTINCT) → ORDER BY**.
+For this folder you need the full path: **FROM → WHERE → GROUP BY → HAVING → SELECT (DISTINCT) → ORDER BY → TOP**.
 
 ---
 
@@ -515,6 +516,100 @@ Do not use `DISTINCT` to hide a bad join. If rows should already be unique, fix 
 
 ---
 
+## Visual cheat sheet — `TOP` (limit rows)
+
+`TOP` **caps how many rows you get back**. You write it next to `SELECT`, but the engine applies it **after** `ORDER BY`.
+
+| Term | Short definition |
+| --- | --- |
+| `SELECT TOP n` | Return at most **n** rows |
+| `TOP` + `ORDER BY … DESC` | Highest / newest first, then take n |
+| `TOP` + `ORDER BY … ASC` | Lowest / oldest first, then take n |
+| `TOP` without `ORDER BY` | n rows, but **which** n is not guaranteed |
+
+**Habit:** pair `TOP` with `ORDER BY`. Otherwise “top 3” is just “any 3.”
+
+### What you type (reading order)
+
+```sql
+SELECT TOP 3 *           -- ① you write TOP here
+FROM customers           -- ②
+ORDER BY score DESC;     -- ③ you write sort last
+```
+
+### What actually runs (execution order)
+
+```
+┌──────────────────────────────────────────────────────────────────┐
+│  STEP 1   FROM customers                                         │
+│           ↓  load rows                                           │
+│                                                                  │
+│  STEP 2   SELECT *                                               │
+│           ↓  pick columns                                        │
+│                                                                  │
+│  STEP 3   ORDER BY score DESC                                    │
+│           ↓  highest score first  ← SORT HERE                    │
+│                                                                  │
+│  STEP 4   TOP 3                                                  │
+│           ↓  keep the first 3 of that sorted list  ← LIMIT HERE  │
+└──────────────────────────────────────────────────────────────────┘
+```
+
+**Not** `TOP` then `ORDER BY`. Sort the full result, **then** take the first n.
+
+**Memory hook:** **O**rder then **T**op — **OT**. Written in `SELECT`, runs **last**.
+
+```mermaid
+flowchart TD
+    A["① FROM customers<br/><i>Load the table</i>"] --> B["② SELECT *<br/><i>Build the result</i>"]
+    B --> C["③ ORDER BY score DESC<br/><i>Highest first</i>"]
+    C --> D["④ TOP 3<br/><i>Keep only 3 rows</i>"]
+    D --> E["Three rows returned to you"]
+
+    style D fill:#fce4d6,stroke:#c65911
+```
+
+### Limit picture — `TOP 3` + `ORDER BY score DESC`
+
+```
+  after ORDER BY DESC              SELECT TOP 3
+  ┌────────┬───────┐               ┌────────┬───────┐
+  │ Ben    │   100 │               │ Ben    │   100 │  ← kept
+  │ Cara   │    85 │               │ Cara   │    85 │  ← kept
+  │ Anna   │    42 │    ──────►    │ Anna   │    42 │  ← kept
+  │ Dan    │    10 │               └────────┴───────┘
+  └────────┴───────┘               Dan dropped (4th)
+  sorted, still all rows           cap at 3
+```
+
+`ORDER BY score ASC` + `TOP 2` is the same picture flipped: keep the **lowest** two.
+
+### `TOP` without `ORDER BY`
+
+```
+  SELECT TOP 3 * FROM customers
+  ┌────────┐
+  │  ???   │  ← three rows, but not “the best” three
+  │  ???   │     SQL Server may pick any three
+  │  ???   │
+  └────────┘
+```
+
+Use this only when you truly do not care which rows — a sample, not a ranking.
+
+### Examples from `top.sql`
+
+| Goal | What to write |
+| --- | --- |
+| Any three customers | `SELECT TOP 3 * FROM customers` |
+| Highest three scores | `SELECT TOP 3 * … ORDER BY score DESC` |
+| Lowest two scores | `SELECT TOP 2 * … ORDER BY score ASC` |
+| Two most recent orders | `SELECT TOP 2 * FROM orders ORDER BY order_date DESC` |
+
+**Rule:** `TOP` answers “how many?” `ORDER BY` answers “which ones?” You usually need both.
+
+---
+
 ## Files in this folder
 
 | File | What it covers |
@@ -526,6 +621,7 @@ Do not use `DISTINCT` to hide a bad join. If rows should already be unique, fix 
 | [group-by.sql](group-by.sql) | Collapse rows with `GROUP BY` (`SUM`, `COUNT`, extra keys) |
 | [having-where-filter.sql](having-where-filter.sql) | Filter rows with `WHERE`, then groups with `HAVING` |
 | [distinct.sql](distinct.sql) | Unique values with `SELECT DISTINCT` |
+| [top.sql](top.sql) | Limit rows with `SELECT TOP` (`ORDER BY` for “which” rows) |
 
 ---
 
@@ -538,5 +634,6 @@ Do not use `DISTINCT` to hide a bad join. If rows should already be unique, fix 
 - **`GROUP BY col`** — one row per value of `col`; pair it with `SUM` / `COUNT` / `AVG` (and `AS` aliases). Extra keys make finer groups.
 - **`HAVING condition`** — filter **groups** after aggregation (`HAVING AVG(score) > 430`). Not a row filter.
 - **`SELECT DISTINCT col`** — unique list; each selected row once. Skip it if data is already unique.
-- **`ORDER BY col ASC|DESC`** — sort the result **last**. Nested columns are tie-breakers.
+- **`ORDER BY col ASC|DESC`** — sort the result **before** `TOP`. Nested columns are tie-breakers.
+- **`SELECT TOP n`** — keep at most n rows (**after** sort). Pair with `ORDER BY` or “top” is any n rows.
 - Comments: `-- one line` or `/* many lines */` — ignored by the engine, for you only.

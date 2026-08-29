@@ -10,7 +10,7 @@ Practice scripts for SQL Server, organized by topic. Open a topic below to read 
 
 ### 1. [Query data with SELECT](query-data-select/README.md)
 
-`USE`, comments, `SELECT`, `FROM`, `WHERE`, `ORDER BY`, `GROUP BY`, `HAVING`, `DISTINCT`
+`USE`, comments, `SELECT`, `FROM`, `WHERE`, `ORDER BY`, `GROUP BY`, `HAVING`, `DISTINCT`, `TOP`
 
 - [Topic notes](query-data-select/README.md)
 - [usedb&comments.sql](query-data-select/usedb%26comments.sql)
@@ -20,6 +20,7 @@ Practice scripts for SQL Server, organized by topic. Open a topic below to read 
 - [group-by.sql](query-data-select/group-by.sql)
 - [having-where-filter.sql](query-data-select/having-where-filter.sql)
 - [distinct.sql](query-data-select/distinct.sql)
+- [top.sql](query-data-select/top.sql)
 
 ## Add a new topic
 
