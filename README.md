@@ -8,6 +8,7 @@ Practice scripts for SQL Server, organized by topic. Open a topic below to read 
 | --- | --- |
 | 1 | [Query data with SELECT](query-data-select/README.md) |
 | 2 | [Create, alter, and drop tables](ddl/README.md) |
+| 3 | [Insert, update, and delete rows](dml/README.md) |
 
 ### 1. [Query data with SELECT](query-data-select/README.md)
 
@@ -29,6 +30,13 @@ Practice scripts for SQL Server, organized by topic. Open a topic below to read 
 
 - [Topic notes](ddl/README.md)
 - [create-alter-drop.sql](ddl/create-alter-drop.sql)
+
+### 3. [Insert, update, and delete rows](dml/README.md)
+
+`INSERT` (`VALUES` and `SELECT`), `UPDATE`, `DELETE`, `TRUNCATE TABLE`
+
+- [Topic notes](dml/README.md)
+- [insert-update-delete.sql](dml/insert-update-delete.sql)
 
 ## Add a new topic
 
