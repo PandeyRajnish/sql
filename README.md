@@ -10,6 +10,7 @@ Practice scripts for SQL Server, organized by topic. Open a topic below to read 
 | 2 | [Create, alter, and drop tables](ddl/README.md) |
 | 3 | [Insert, update, and delete rows](dml/README.md) |
 | 4 | [Filter rows with WHERE](filtering-data/README.md) |
+| 5 | [Combine tables with joins](<joins(columns-rows)/README.md>) |
 
 ### 1. [Query data with SELECT](query-data-select/README.md)
 
@@ -45,6 +46,13 @@ Comparison operators, `AND` / `OR` / `NOT`, `BETWEEN`, `IN`, `LIKE`
 
 - [Topic notes](filtering-data/README.md)
 - [filtering-data.sql](filtering-data/filtering-data.sql)
+
+### 5. [Combine tables with joins](<joins(columns-rows)/README.md>)
+
+No join (two separate results), then one file per join type (`INNER`, `LEFT`, `RIGHT`, `FULL`, `CROSS`)
+
+- [Topic notes](<joins(columns-rows)/README.md>)
+- [no-join.sql](<joins(columns-rows)/no-join.sql>)
 
 ## Add a new topic
 
