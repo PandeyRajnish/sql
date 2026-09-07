@@ -49,10 +49,11 @@ Comparison operators, `AND` / `OR` / `NOT`, `BETWEEN`, `IN`, `LIKE`
 
 ### 5. [Combine tables with joins](<joins(columns-rows)/README.md>)
 
-No join (two separate results), then one file per join type (`INNER`, `LEFT`, `RIGHT`, `FULL`, `CROSS`)
+No join (two separate results), `INNER JOIN` (matches only), then one file per remaining join type (`LEFT`, `RIGHT`, `FULL`, `CROSS`)
 
 - [Topic notes](<joins(columns-rows)/README.md>)
 - [no-join.sql](<joins(columns-rows)/no-join.sql>)
+- [inner-join.sql](<joins(columns-rows)/inner-join.sql>)
 
 ## Add a new topic
 
