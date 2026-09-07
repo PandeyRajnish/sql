@@ -9,6 +9,7 @@ Practice scripts for SQL Server, organized by topic. Open a topic below to read 
 | 1 | [Query data with SELECT](query-data-select/README.md) |
 | 2 | [Create, alter, and drop tables](ddl/README.md) |
 | 3 | [Insert, update, and delete rows](dml/README.md) |
+| 4 | [Filter rows with WHERE](filtering-data/README.md) |
 
 ### 1. [Query data with SELECT](query-data-select/README.md)
 
@@ -37,6 +38,13 @@ Practice scripts for SQL Server, organized by topic. Open a topic below to read 
 
 - [Topic notes](dml/README.md)
 - [insert-update-delete.sql](dml/insert-update-delete.sql)
+
+### 4. [Filter rows with WHERE](filtering-data/README.md)
+
+Comparison operators, `AND` / `OR` / `NOT`, `BETWEEN`, `IN`, `LIKE`
+
+- [Topic notes](filtering-data/README.md)
+- [filtering-data.sql](filtering-data/filtering-data.sql)
 
 ## Add a new topic
 
