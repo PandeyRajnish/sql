@@ -7,6 +7,7 @@ Practice scripts for SQL Server, organized by topic. Open a topic below to read 
 | # | Topic |
 | --- | --- |
 | 1 | [Query data with SELECT](query-data-select/README.md) |
+| 2 | [Create, alter, and drop tables](ddl/README.md) |
 
 ### 1. [Query data with SELECT](query-data-select/README.md)
 
@@ -21,6 +22,13 @@ Practice scripts for SQL Server, organized by topic. Open a topic below to read 
 - [having-where-filter.sql](query-data-select/having-where-filter.sql)
 - [distinct.sql](query-data-select/distinct.sql)
 - [top.sql](query-data-select/top.sql)
+
+### 2. [Create, alter, and drop tables](ddl/README.md)
+
+`CREATE TABLE`, `ALTER TABLE` (`ADD`, `DROP COLUMN`, `ALTER COLUMN`), `DROP TABLE`
+
+- [Topic notes](ddl/README.md)
+- [create-alter-drop.sql](ddl/create-alter-drop.sql)
 
 ## Add a new topic
 
