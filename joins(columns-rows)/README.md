@@ -2,7 +2,7 @@
 
 [← All topics](../README.md)
 
-A **join** puts columns from **two (or more) tables into one result**, matching rows that belong together. This folder starts with **no join** — two separate queries, two separate grids — then one `.sql` file per join type. **INNER JOIN** keeps matching rows only. **LEFT** / **RIGHT** keep one side. **FULL JOIN** keeps **every** row from both sides, with `NULL` where there is no match.
+A **join** puts columns from **two (or more) tables into one result**, matching rows that belong together. This folder starts with **no join** — two separate queries, two separate grids — then one `.sql` file per join type. **INNER JOIN** keeps matching rows only. **LEFT** / **RIGHT** keep one side. **FULL JOIN** keeps **every** row from both sides, with `NULL` where there is no match. **Advanced** patterns (anti / semi) live in [advanced-join-types](advanced-join-types/README.md).
 
 ---
 
@@ -631,6 +631,7 @@ Each join **starts from the same two tables** and keeps a different set of rows.
 | **RIGHT JOIN** | All right rows + matches (unmatched right → `NULL` on the left) | [right-join.sql](right-join.sql) |
 | **FULL JOIN** | All rows from **both**; `NULL` where there is no match | [full-join.sql](full-join.sql) |
 | **CROSS JOIN** | Every left row paired with **every** right row (no `ON`) | `cross-join.sql` |
+| **Left anti join** | Left rows with **no** right match (`LEFT` + `WHERE` right `IS NULL`) | [advanced-join-types/left-anti-join.sql](advanced-join-types/left-anti-join.sql) |
 
 ```mermaid
 flowchart TD
@@ -656,6 +657,7 @@ When you add a file, extend **Files in this folder** and drop in a new “Visual
 | [left-join.sql](left-join.sql) | `LEFT JOIN` — all left rows; `NULL` on the right when there is no match; table order matters |
 | [right-join.sql](right-join.sql) | `RIGHT JOIN` — all right rows; `NULL` on the left when there is no match; same as LEFT with tables swapped |
 | [full-join.sql](full-join.sql) | `FULL JOIN` — all rows from both sides; `NULL` where unmatched; table order does not drop rows |
+| [advanced-join-types/](advanced-join-types/README.md) | Anti / semi patterns — start with [left-anti-join.sql](advanced-join-types/left-anti-join.sql) |
 
 ---
 
@@ -675,4 +677,5 @@ When you add a file, extend **Files in this folder** and drop in a new “Visual
 - **Do not `SELECT *`** — both tables have `id`; pick the columns you need.
 - **`ON id = customer_id`** is ambiguous. Write `c.id = o.customer_id`.
 - **CROSS** = every pairing (no `ON` match rule).
-- Add **one `.sql` file per join**, then a cheat sheet for that file on this page.
+- **Left anti** — `LEFT JOIN` + `WHERE right_key IS NULL` → left rows with no match. See [advanced-join-types](advanced-join-types/README.md).
+- Add **one `.sql` file per join**, then a cheat sheet for that file on this page (or under advanced-join-types).
