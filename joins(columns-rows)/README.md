@@ -2,7 +2,7 @@
 
 [← All topics](../README.md)
 
-A **join** puts columns from **two (or more) tables into one result**, matching rows that belong together. This folder starts with **no join** — two separate queries, two separate grids — then one `.sql` file per join type. **INNER JOIN** keeps matching rows only. **LEFT JOIN** keeps every left-table row. **RIGHT JOIN** keeps every right-table row (and is usually rewritten as a `LEFT JOIN` with the tables swapped).
+A **join** puts columns from **two (or more) tables into one result**, matching rows that belong together. This folder starts with **no join** — two separate queries, two separate grids — then one `.sql` file per join type. **INNER JOIN** keeps matching rows only. **LEFT** / **RIGHT** keep one side. **FULL JOIN** keeps **every** row from both sides, with `NULL` where there is no match.
 
 ---
 
@@ -40,6 +40,11 @@ flowchart LR
     subgraph rightj ["RIGHT JOIN — right-join.sql"]
         C4["FROM customers"] --> R["RIGHT JOIN orders ON key"]
         R --> R5["All orders + matching customers"]
+    end
+
+    subgraph fullj ["FULL JOIN — full-join.sql"]
+        C5["FROM customers"] --> F["FULL JOIN orders ON key"]
+        F --> R6["All customers and all orders"]
     end
 ```
 
@@ -495,6 +500,115 @@ Order `99` has no customer → **kept**, `id` and `first_name` are `NULL`. Ann n
 
 ---
 
+## Visual cheat sheet — `FULL JOIN` (all of both)
+
+`FULL JOIN` (also written `FULL OUTER JOIN`) keeps **every row from both tables**. Matching pairs sit on one row. A left-only row gets `NULL` on the right. A right-only row gets `NULL` on the left. Nothing is dropped for lack of a partner.
+
+| Term | Short definition |
+| --- | --- |
+| `FULL JOIN` | All left rows **and** all right rows |
+| Match | Both sides filled on one result row |
+| Left-only | Right columns are `NULL` (e.g. Ann with no order) |
+| Right-only | Left columns are `NULL` (e.g. order 99 with no customer) |
+| Table order | **Does not matter** for which rows survive (same as INNER) — you still pick column order in `SELECT` |
+
+Think: **LEFT ∪ RIGHT** — the union of both outer joins on the same `ON` key.
+
+### What you type (from `full-join.sql`)
+
+```sql
+SELECT
+    c.id,
+    c.first_name,
+    o.order_id,
+    o.sales
+FROM customers AS c
+FULL JOIN orders AS o
+    ON c.id = o.customer_id;
+```
+
+### What actually happens
+
+```
+┌──────────────────────────────────────────────────────────────────┐
+│  STEP 1   FROM customers AS c                                    │
+│           ↓  load customers                                      │
+│                                                                  │
+│  STEP 2   FULL JOIN orders AS o                                  │
+│           ON c.id = o.customer_id                                │
+│           ↓  matches + left-only + right-only  ← KEEP EVERYONE   │
+│                                                                  │
+│  STEP 3   SELECT c.id, c.first_name, o.order_id, o.sales         │
+│           ↓  one grid with every customer and every order        │
+└──────────────────────────────────────────────────────────────────┘
+```
+
+**Memory hook:** **FULL** = **F**rom **U**nmatched on **Left** and **Right**. INNER + leftovers from both sides.
+
+```mermaid
+flowchart TD
+    A["① FROM customers AS c"] --> B["② FULL JOIN orders AS o<br/>ON c.id = o.customer_id"]
+    B --> C["Match → both sides filled"]
+    B --> D["Left only → right NULL"]
+    B --> E["Right only → left NULL"]
+    C --> F["③ SELECT columns"]
+    D --> F
+    E --> F
+    F --> G["All customers and all orders"]
+
+    style B fill:#e2d5f1,stroke:#6f42c1
+    style D fill:#fff3cd,stroke:#856404
+    style E fill:#d1ecf1,stroke:#0c5460
+```
+
+### Keep-everyone picture — Ann **and** order 99
+
+```
+  customers              orders                       FULL JOIN result
+  ┌────┬───────┐         ┌──────────┬─────┬──────┐    ┌────┬───────┬──────────┬───────┐
+  │  1 │ Maria │ ●───────│ order 10 │  1  │  90  │    │  1 │ Maria │       10 │    90 │
+  │  1 │ Maria │ ●───────│ order 11 │  1  │  40  │    │  1 │ Maria │       11 │    40 │
+  │  2 │ Max   │ ●───────│ order 12 │  2  │  15  │    │  2 │ Max   │       12 │    15 │
+  │  3 │ Ann   │    ○    │          │     │      │    │  3 │ Ann   │     NULL │  NULL │
+  └────┴───────┘         │ order 99 │ 99  │  50  │    │NULL│ NULL  │       99 │    50 │
+                         └──────────┴─────┴──────┘    └────┴───────┴──────────┴───────┘
+                                                      Ann kept · order 99 kept
+```
+
+Ann never ordered → **kept**, order columns `NULL`. Order `99` has no customer → **kept**, customer columns `NULL`. Matches still appear as usual (Maria twice).
+
+### INNER / LEFT / RIGHT / FULL (same `ON`)
+
+| | INNER | LEFT (`customers`) | RIGHT (`orders`) | FULL |
+| --- | --- | --- | --- | --- |
+| Maria + orders | ✓ | ✓ | ✓ | ✓ |
+| Ann, no order | ✗ | ✓ (`NULL` order) | ✗ | ✓ (`NULL` order) |
+| Order 99, no customer | ✗ | ✗ | ✓ (`NULL` name) | ✓ (`NULL` name) |
+
+**FULL** is what you get if you could run LEFT and RIGHT and keep every row from both without dropping the unmatched side of either.
+
+### Table order does not change who survives
+
+```
+  FROM customers FULL JOIN orders     FROM orders FULL JOIN customers
+  ┌─────────────────────────────┐     ┌─────────────────────────────┐
+  │ Ann with NULL order    ✓    │  =  │ Ann with NULL order    ✓    │
+  │ order 99 with NULL name ✓   │     │ order 99 with NULL name ✓   │
+  └─────────────────────────────┘     └─────────────────────────────┘
+  same set of rows — column order in SELECT can still differ
+```
+
+### Examples from `full-join.sql`
+
+| Goal | What to write |
+| --- | --- |
+| Every customer and every order | `FROM customers AS c FULL JOIN orders AS o ON c.id = o.customer_id` |
+| Name + order (NULLs where unmatched) | `SELECT c.id, c.first_name, o.order_id, o.sales` |
+
+**Rule:** FULL JOIN answers “show me **everyone** on both sides, matched when possible.” Use it when dropping either unmatched side would hide a problem (orphan orders **and** customers who never bought).
+
+---
+
 ## Visual cheat sheet — join family (files to add)
 
 Each join **starts from the same two tables** and keeps a different set of rows. Add one `.sql` file per type; add a matching cheat sheet in this README when you do.
@@ -515,7 +629,7 @@ Each join **starts from the same two tables** and keeps a different set of rows.
 | **INNER JOIN** | Only rows that **match** on both sides | [inner-join.sql](inner-join.sql) |
 | **LEFT JOIN** | All left rows + matches (unmatched left → `NULL` on the right) | [left-join.sql](left-join.sql) |
 | **RIGHT JOIN** | All right rows + matches (unmatched right → `NULL` on the left) | [right-join.sql](right-join.sql) |
-| **FULL JOIN** | All rows from **both**; `NULL` where there is no match | `full-join.sql` |
+| **FULL JOIN** | All rows from **both**; `NULL` where there is no match | [full-join.sql](full-join.sql) |
 | **CROSS JOIN** | Every left row paired with **every** right row (no `ON`) | `cross-join.sql` |
 
 ```mermaid
@@ -541,6 +655,7 @@ When you add a file, extend **Files in this folder** and drop in a new “Visual
 | [inner-join.sql](inner-join.sql) | `INNER JOIN` — matching rows only; aliases; table order does not matter |
 | [left-join.sql](left-join.sql) | `LEFT JOIN` — all left rows; `NULL` on the right when there is no match; table order matters |
 | [right-join.sql](right-join.sql) | `RIGHT JOIN` — all right rows; `NULL` on the left when there is no match; same as LEFT with tables swapped |
+| [full-join.sql](full-join.sql) | `FULL JOIN` — all rows from both sides; `NULL` where unmatched; table order does not drop rows |
 
 ---
 
@@ -550,13 +665,14 @@ When you add a file, extend **Files in this folder** and drop in a new “Visual
 - **`INNER JOIN … ON c.id = o.customer_id`** — one result; **matches only**. No order → customer dropped. No customer → order dropped.
 - **`LEFT JOIN`** — **all** left rows (`FROM`). No match → right columns are `NULL`. Table order **matters**.
 - **`RIGHT JOIN`** — **all** right rows (after `JOIN`). No match → left columns are `NULL`. Table order **matters**.
+- **`FULL JOIN`** — **all** left **and** all right rows. Unmatched sides get `NULL`. Ann **and** order 99 both stay.
 - **`FROM customers LEFT JOIN orders`** — every customer, including those with no orders. Order-only rows stay out.
 - **`FROM customers RIGHT JOIN orders`** — every order, including those with no customer. Customer-only rows stay out.
 - **Prefer LEFT** — `orders LEFT JOIN customers` = `customers RIGHT JOIN orders`. Same rows; `LEFT` is the usual style.
-- **One customer, two orders** — two result rows (one per pair). Same for INNER, LEFT, and RIGHT.
-- **Table order does not matter** for `INNER JOIN`. For LEFT / RIGHT, the “keep all” side is the one you name as left or right.
+- **One customer, two orders** — two result rows (one per pair). Same for INNER, LEFT, RIGHT, and FULL.
+- **Table order does not matter** for `INNER JOIN` or `FULL JOIN` (who survives). For LEFT / RIGHT, the “keep all” side is the one you name as left or right.
 - **Aliases** — `FROM customers AS c … JOIN orders AS o`. Qualify columns (`c.id`, `o.sales`).
 - **Do not `SELECT *`** — both tables have `id`; pick the columns you need.
 - **`ON id = customer_id`** is ambiguous. Write `c.id = o.customer_id`.
-- **FULL** = keep both sides. **CROSS** = every pairing.
+- **CROSS** = every pairing (no `ON` match rule).
 - Add **one `.sql` file per join**, then a cheat sheet for that file on this page.
